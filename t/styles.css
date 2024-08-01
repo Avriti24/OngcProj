@@ -4,7 +4,7 @@
     padding: 0;
     box-sizing: border-box;
     height: 100%;
-    margin: 0;
+    
 }
 
 header {
@@ -92,6 +92,10 @@ footer {
     position: relative;
     bottom: 0;
     width: 100%;
+}
+.top_container{
+    margin-top: 0;
+    padding-top: 0;
 }
 
 /* Logo */
