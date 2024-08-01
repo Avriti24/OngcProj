@@ -1,0 +1,71 @@
+import os
+import hashlib
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def collect_files(directory):
+    files = []
+    for root, _, filenames in os.walk(directory):
+        for filename in filenames:
+            if filename.lower().endswith('.pdf'):
+                file_path = os.path.join(root, filename)
+                files.append(file_path)
+    return files
+
+def compute_hash(file_path):
+    hasher = hashlib.sha256()
+    try:
+        with open(file_path, 'rb') as f:
+            while chunk := f.read(8192):
+                hasher.update(chunk)
+        return hasher.hexdigest()
+    except IOError as e:
+        logging.error(f"Error reading file {file_path}: {e}")
+        return None
+
+def detect_duplicates(file_list):
+    file_hashes = {}
+    duplicates = []
+    for file_path in file_list:
+        if os.path.isfile(file_path):
+            file_hash = compute_hash(file_path)
+            if file_hash:
+                if file_hash in file_hashes:
+                    duplicates.append((file_path, file_hashes[file_hash]))
+                else:
+                    file_hashes[file_hash] = file_path
+    return duplicates
+
+def main(directory_to_clean):
+    if not os.path.isdir(directory_to_clean):
+        logging.error(f"The directory {directory_to_clean} does not exist.")
+        return False
+
+    files = collect_files(directory_to_clean)
+    logging.info(f"Collected {len(files)} PDF files from {directory_to_clean}")
+
+    duplicates = detect_duplicates(files)
+    
+    logging.info(f"Found {len(duplicates)} duplicate PDF files")
+
+    if duplicates:
+        for duplicate, original in duplicates:
+            logging.info(f"Duplicate: {os.path.basename(duplicate)} is a duplicate of {os.path.basename(original)}")
+        return True
+    else:
+        logging.info("No duplicates found")
+        return False
+
+# Prompt user for input
+DIRECTORY_TO_CLEAN = input("Enter directory to clean (provide full path): ")
+
+# Run the main function with the user-provided directory
+duplicates_exist = main(DIRECTORY_TO_CLEAN)
+
+if duplicates_exist:
+    print("Duplicate PDF files exist in the directory.")
+elif duplicates_exist is False and not os.path.isdir(DIRECTORY_TO_CLEAN):
+    print("The specified directory does not exist.")
+else:
+    print("No duplicate PDF files found in the directory.")
