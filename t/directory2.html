@@ -50,11 +50,15 @@
         padding: 10px;
         background-color: white;
         border-radius: 5px;
-        width: 80%;
+        width: 60%;
         margin-left: auto;
         margin-right: auto;
         text-align: left;
         white-space: pre-wrap;
+        font-family: "Courier New", Courier, monospace;
+        box-shadow: 0 4px 8px #292b30;
+        color: #333;
+        border: 2px solid #0051ff;
       }
     </style>
   </head>
@@ -102,7 +106,7 @@
               });
               displayOutput(duplicatesList);
             } else {
-              displayOutput(data.message + "\nNo duplicates found.");
+              displayOutput("No duplicates found.");
             }
           })
           .catch((error) => {

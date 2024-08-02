@@ -4,8 +4,7 @@ from PyPDF2 import PdfReader
 from docx import Document
 from difflib import SequenceMatcher
 from concurrent.futures import ThreadPoolExecutor
-import re
-import hashlib
+from functools import lru_cache
 
 # Helper function to calculate file hash
 def calculate_hash(filepath):
@@ -31,7 +30,7 @@ def find_duplicates(directory, file_extension):
                 else:
                     files[filehash] = filepath
 
-    return duplicates
+    return {"duplicates": duplicates, "message": "Check completed"}
 
 # Find duplicates in any file type
 def find_any_duplicates(directory):
@@ -51,14 +50,12 @@ def find_any_duplicates(directory):
     return duplicates
 
 # Function to process text content of various file types for similarity
+@lru_cache(maxsize=None)
 def get_file_text(filepath):
     ext = os.path.splitext(filepath)[1].lower()
     if ext == '.pdf':
         reader = PdfReader(filepath)
-        text = ''
-        for page in reader.pages:
-            text += page.extract_text()
-        return text
+        return ''.join([page.extract_text() for page in reader.pages])
     elif ext == '.docx':
         doc = Document(filepath)
         return '\n'.join([para.text for para in doc.paragraphs])
@@ -89,26 +86,3 @@ def process_directory_similarity(directory):
         results = list(executor.map(calculate_similarity, file_pairs))
 
     return results
-
-
-# # Calculate similarity percentage among all files in the directory
-# def process_directory_similarity(directory):
-#     files = [os.path.join(root, filename)
-#              for root, _, filenames in os.walk(directory)
-#              for filename in filenames]
-
-#     similarities = []
-
-#     for i in range(len(files)):
-#         for j in range(i + 1, len(files)):
-#             file1_text = get_file_text(files[i])
-#             file2_text = get_file_text(files[j])
-#             similarity = SequenceMatcher(None, file1_text, file2_text).ratio() * 100
-
-#             similarities.append({
-#                 'file1': files[i],
-#                 'file2': files[j],
-#                 'similarity': similarity
-#             })
-
-#     return similarities

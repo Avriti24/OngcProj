@@ -47,14 +47,18 @@
       }
       #output {
         margin-top: 20px;
-        padding: 10px;
-        background-color: white;
-        border-radius: 5px;
-        width: 80%;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        width: 60%;
         margin-left: auto;
         margin-right: auto;
         text-align: left;
         white-space: pre-wrap;
+        font-family: "Courier New", Courier, monospace;
+        box-shadow: 0 4px 8px #292b30;
+        color: #333;
+        border: 2px solid #0051ff;
       }
     </style>
   </head>
@@ -64,7 +68,6 @@
         <div class="logo">
           <img src="Preview (1).png" alt="Logo" />
         </div>
-
         <br />
       </header>
       <input
@@ -86,9 +89,7 @@
           displayOutput("Please enter a directory");
           return;
         }
-
         let url = "http://127.0.0.1:5000/find-pdf-duplicates";
-
         fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -103,7 +104,7 @@
               });
               displayOutput(duplicatesList);
             } else {
-              displayOutput(data.message + "\nNo duplicates found.");
+              displayOutput("No duplicates found.");
             }
           })
           .catch((error) => {
