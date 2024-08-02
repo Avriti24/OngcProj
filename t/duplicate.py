@@ -3,6 +3,9 @@ import hashlib
 from PyPDF2 import PdfReader
 from docx import Document
 from difflib import SequenceMatcher
+from concurrent.futures import ThreadPoolExecutor
+import re
+import hashlib
 
 # Helper function to calculate file hash
 def calculate_hash(filepath):
@@ -66,24 +69,46 @@ def get_file_text(filepath):
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             return f.read()
 
-# Calculate similarity percentage among all files in the directory
+def calculate_similarity(file_pair):
+    file1, file2 = file_pair
+    file1_text = get_file_text(file1)
+    file2_text = get_file_text(file2)
+    similarity = SequenceMatcher(None, file1_text, file2_text).ratio() * 100
+    return {'file1': file1, 'file2': file2, 'similarity': similarity}
+
+# Calculate similarity percentage among all files in the directory using parallel processing
 def process_directory_similarity(directory):
     files = [os.path.join(root, filename)
              for root, _, filenames in os.walk(directory)
              for filename in filenames]
 
     similarities = []
+    file_pairs = [(files[i], files[j]) for i in range(len(files)) for j in range(i + 1, len(files))]
 
-    for i in range(len(files)):
-        for j in range(i + 1, len(files)):
-            file1_text = get_file_text(files[i])
-            file2_text = get_file_text(files[j])
-            similarity = SequenceMatcher(None, file1_text, file2_text).ratio() * 100
+    with ThreadPoolExecutor() as executor:
+        results = list(executor.map(calculate_similarity, file_pairs))
 
-            similarities.append({
-                'file1': files[i],
-                'file2': files[j],
-                'similarity': similarity
-            })
+    return results
 
-    return similarities
+
+# # Calculate similarity percentage among all files in the directory
+# def process_directory_similarity(directory):
+#     files = [os.path.join(root, filename)
+#              for root, _, filenames in os.walk(directory)
+#              for filename in filenames]
+
+#     similarities = []
+
+#     for i in range(len(files)):
+#         for j in range(i + 1, len(files)):
+#             file1_text = get_file_text(files[i])
+#             file2_text = get_file_text(files[j])
+#             similarity = SequenceMatcher(None, file1_text, file2_text).ratio() * 100
+
+#             similarities.append({
+#                 'file1': files[i],
+#                 'file2': files[j],
+#                 'similarity': similarity
+#             })
+
+#     return similarities

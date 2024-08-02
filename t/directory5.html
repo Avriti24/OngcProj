@@ -103,10 +103,7 @@
           .then((response) => response.json())
           .then((data) => {
             if (data.similarities && data.similarities.length > 0) {
-              let similarityList = `Overall Similarity Percentage: ${data.overall_similarity_percentage.toFixed(
-                2
-              )}%\n\n`;
-              similarityList += "Similarities found:\n";
+              let similarityList = "Similarities found:\n";
               data.similarities.forEach((item) => {
                 similarityList += `File 1: ${item.file1}\nFile 2: ${
                   item.file2
