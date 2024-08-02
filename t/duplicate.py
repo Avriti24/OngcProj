@@ -3,9 +3,7 @@ import hashlib
 from PyPDF2 import PdfReader
 from docx import Document
 from difflib import SequenceMatcher
-from concurrent.futures import ThreadPoolExecutor
-import re
-import hashlib
+from tabulate import tabulate
 
 # Helper function to calculate file hash
 def calculate_hash(filepath):
@@ -69,46 +67,52 @@ def get_file_text(filepath):
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             return f.read()
 
-def calculate_similarity(file_pair):
-    file1, file2 = file_pair
-    file1_text = get_file_text(file1)
-    file2_text = get_file_text(file2)
-    similarity = SequenceMatcher(None, file1_text, file2_text).ratio() * 100
-    return {'file1': file1, 'file2': file2, 'similarity': similarity}
+# Function to calculate similarity percentage between two texts
+def calculate_similarity(text1, text2):
+    return SequenceMatcher(None, text1, text2).ratio()
 
-# Calculate similarity percentage among all files in the directory using parallel processing
-def process_directory_similarity(directory):
-    files = [os.path.join(root, filename)
-             for root, _, filenames in os.walk(directory)
-             for filename in filenames]
-
+# Calculate similarity percentage among all files in the directory
+def calculate_similarity_among_files(directory):
+    file_texts = {}
     similarities = []
-    file_pairs = [(files[i], files[j]) for i in range(len(files)) for j in range(i + 1, len(files))]
 
-    with ThreadPoolExecutor() as executor:
-        results = list(executor.map(calculate_similarity, file_pairs))
+    for root, _, filenames in os.walk(directory):
+        for filename in filenames:
+            filepath = os.path.join(root, filename)
+            file_text = get_file_text(filepath)
+            file_texts[filepath] = file_text
 
-    return results
+    filepaths = list(file_texts.keys())
+    for i in range(len(filepaths)):
+        for j in range(i + 1, len(filepaths)):
+            file1 = filepaths[i]
+            file2 = filepaths[j]
+            similarity = calculate_similarity(file_texts[file1], file_texts[file2])
+            similarities.append((os.path.basename(file1), os.path.basename(file2), similarity))
 
+    return similarities
 
-# # Calculate similarity percentage among all files in the directory
-# def process_directory_similarity(directory):
-#     files = [os.path.join(root, filename)
-#              for root, _, filenames in os.walk(directory)
-#              for filename in filenames]
+# Get directory input from user
+directory = input("Enter the directory path: ")
 
-#     similarities = []
+# Find duplicates and calculate similarities
+duplicates = find_any_duplicates(directory)
+similarities = calculate_similarity_among_files(directory)
 
-#     for i in range(len(files)):
-#         for j in range(i + 1, len(files)):
-#             file1_text = get_file_text(files[i])
-#             file2_text = get_file_text(files[j])
-#             similarity = SequenceMatcher(None, file1_text, file2_text).ratio() * 100
+# Find the highest similarity
+max_similarity = max(similarities, key=lambda x: x[2])
 
-#             similarities.append({
-#                 'file1': files[i],
-#                 'file2': files[j],
-#                 'similarity': similarity
-#             })
+# Print results
+print("Duplicates:")
+duplicate_table = [[os.path.basename(dup[0]), os.path.basename(dup[1])] for dup in duplicates]
+print(tabulate(duplicate_table, headers=["File 1", "File 2"]))
 
-#     return similarities
+print("\nSimilarities:")
+similarity_table = [
+    [sim[0], sim[1], f"{sim[2] * 100:.2f}%"] if sim != max_similarity else [f"**{sim[0]}**", f"**{sim[1]}**", f"**{sim[2] * 100:.2f}%**"]
+    for sim in similarities
+]
+print(tabulate(similarity_table, headers=["File 1", "File 2", "Similarity Percentage"]))
+
+# Print highest similarity
+print(f"\nHighest similarity between files: {max_similarity[0]} and {max_similarity[1]} with {max_similarity[2] * 100:.2f}% similarity.")
